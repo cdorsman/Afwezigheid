@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Index{% endblock %}
+{% block head %}
+  {{ super() }}
+  <style type="text/css">
+    .important { color: #336699; }
+  </style>
+{% endblock %}
+{% block content %}
+  <h1>Afwezigheid melden</h1>
+  
+  {% if current_user.is_authenticated %}
+    <div class="authenticated-content">
+      <p>Welkom, <strong>{{ current_user.username }}</strong>!</p>
+      
+      <section class="report-section">
+        <h2>Meld uw afwezigheid</h2>
+        <p>U bent ingelogd en kunt hier uw afwezigheid melden.</p>
+        <!-- TODO: Add form for reporting absence -->
+      
+        <form>
+            {% for absent in absences %}
+                <td>{{absent}}</td>
+            {% endfor %}
+        </form>
+    </section>
+      
+      <section class="history-section">
+        <h2>Uw afwezigheidsgeschiedenis</h2>
+        <p>Hier ziet u uw eerder gemelde afwezigheden.</p>
+        <!-- TODO: Add user's absence history -->
+      </section>
+      
+      <p><a href="{{ url_for('logout') }}">Afmelden</a></p>
+    </div>
+  {% else %}
+    <div class="unauthenticated-content">
+      <p>Welkom! U moet ingelogd zijn om afwezigheid in te melden.</p>
+      <p><a href="{{ url_for('login') }}">Klik hier om in te loggen</a></p>
+    </div>
+  {% endif %}
+{% endblock %}
