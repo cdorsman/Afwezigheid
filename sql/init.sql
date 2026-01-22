@@ -41,6 +41,7 @@ CREATE TABLE Aanwezigheid (
     check_uit DATETIME,
     status ENUM('Aanwezig', 'Afwezig', 'Remote', 'Ziek') DEFAULT 'Aanwezig',
     notities TEXT,
+    goedkeuring_status VARCHAR(20) NOT NULL DEFAULT 'pending',
     FOREIGN KEY (werknemer_id) REFERENCES Werknemers(werknemer_id)
 );
 

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Index{% endblock %}
+{% block head %}
+  {{ super() }}
+  <style type="text/css">
+    .important { color: #336699; }
+  </style>
+{% endblock %}
+{% block content %}
+  <h1>Afwezigheid melden</h1>
+  
+  {% if current_user.is_authenticated and rol != "teamleider" %}
+    <div class="authenticated-content">
+      <p>Welkom, <strong>{{ current_user.gebruikersnaam }}</strong>
+      <a style="margin-left: 10px;" href="{{ url_for('logout') }}">Afmelden</a></p>
+      
+      <section class="report-section">
+        <!-- Form voor create -->
+      <form action="{{ url_for('index') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="action" value="create">
+        
+        <div>
+          <label for="check_in">Start:</label>
+          <input style="margin-right: 20px;" type="datetime-local" id="check_in" name="check_in" required>
+          <label for="check_uit">Eind:</label>
+          <input style="margin-right: 20px;" type="datetime-local" id="check_uit" name="check_uit">
+          <label for="status">Status:</label>
+          <select style="margin-right: 20px;" id="status" name="status" required>
+            <option value="Aanwezig">Aanwezig</option>
+            <option value="Afwezig">Afwezig</option>
+            <option value="Ziek">Ziek</option>
+            <option value="Verlof">Verlof</option>
+          </select>
+
+          <label for="notities">Notities:</label>
+          <textarea style="margin-right: 20px;" id="notities" name="notities" rows="2" cols="40"></textarea>
+        <button type="submit">Opslaan</button>
+        </div>
+      </form>
+      <br/>
+            
+      <form>
+        {% if aanwezigheid %}
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align: left">Start</th>
+                <th style="text-align: left">Eind</th>
+                <th style="text-align: left">Status</th>
+                <th style="text-align: left">Notities</th>
+                <th style="text-align: left">Actie</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for record in aanwezigheid %}
+                <tr>
+                  <td style="padding-right: 20px;">{{ record.check_in.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td style="padding-right: 20px;">{{ record.check_uit.strftime('%Y-%m-%d %H:%M') if record.check_uit else '-' }}</td>
+                  <td style="padding-right: 20px;">{{ record.status }}</td>
+                  <td style="padding-right: 20px;">{{ record.notities or '-' }}</td>
+                  <td>
+                    <form style="display: inline;" action="{{ url_for('index') }}" method="POST">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="record_id" value="{{ record.aanwezigheid_id }}">
+                      <button type="submit">Verwijderen</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p>Geen aanwezigheidsgegevens gevonden.</p>
+        {% endif %}
+      </form>
+      </section>
+  {% elif current_user.is_authenticated and rol == "teamleider" %}
+      <h2>Teamleider</h2>
+  {% else %}
+    <div class="unauthenticated-content">
+      <p>Welkom! U moet ingelogd zijn om afwezigheid in te melden.</p>
+      <p><a href="{{ url_for('login') }}">Klik hier om in te loggen</a></p>
+    </div>
+  {% endif %}
+{% endblock %}
