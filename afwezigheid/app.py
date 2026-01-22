@@ -4,11 +4,11 @@ from os import getenv
 from flask import Flask, render_template, request, redirect, url_for
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import generate_csrf
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from dotenv import load_dotenv
 from typing import Any, Optional
 
-from models import db, User, Aanwezigheid
+from models import db, User, Verlof
 
 load_dotenv()
 
@@ -46,83 +46,83 @@ def load_user(werknemer_id: str) -> Optional[User]:
 @app.route("/", methods=['GET', 'POST'])
 @login_required
 def index() -> Any:
+    """Manage leave requests."""
     if request.method == 'POST':
         action = request.form.get('action')
         
-        # Acties voor normale werknemers
+        # Werknemers: verlofaanvraag indienen
         if current_user.rol != 'teamleider':
-            if action == 'create':
+            if action == 'request':
                 try:
-                    check_in = datetime.fromisoformat(request.form.get('check_in'))
-                    check_uit_str = request.form.get('check_uit')
-                    check_uit = datetime.fromisoformat(check_uit_str) if check_uit_str else None
-                    status = request.form.get('status')
-                    notities = request.form.get('notities')
+                    verlof_type = request.form.get('verlof_type')
+                    start_datum = datetime.strptime(request.form.get('start_datum'), '%Y-%m-%d').date()
+                    eind_datum = datetime.strptime(request.form.get('eind_datum'), '%Y-%m-%d').date()
                     
-                    nieuwe_record = Aanwezigheid(
+                    nieuw_verlof = Verlof(
                         werknemer_id=current_user.werknemer_id,
-                        check_in=check_in,
-                        check_uit=check_uit,
-                        status=status,
-                        notities=notities,
-                        goedkeuring_status='pending'
+                        verlof_type=verlof_type,
+                        start_datum=start_datum,
+                        eind_datum=eind_datum,
+                        status='In behandeling'
                     )
                     
-                    db.session.add(nieuwe_record)
+                    db.session.add(nieuw_verlof)
                     db.session.commit()
                 except Exception as e:
-                    print(f"Error creating record: {e}")
+                    print(f"Error creating leave request: {e}")
                 return redirect(url_for('index'))
             
             elif action == 'delete':
                 try:
-                    record_id = int(request.form.get('record_id'))
-                    record = Aanwezigheid.query.get(record_id)
+                    verlof_id = int(request.form.get('verlof_id'))
+                    verlof_record = Verlof.query.get(verlof_id)
                     
-                    if record and record.werknemer_id == current_user.werknemer_id:
-                        db.session.delete(record)
+                    if verlof_record and verlof_record.werknemer_id == current_user.werknemer_id:
+                        db.session.delete(verlof_record)
                         db.session.commit()
                 except Exception as e:
-                    print(f"Error deleting record: {e}")
+                    print(f"Error deleting leave request: {e}")
                 return redirect(url_for('index'))
         
-        # Acties voor teamleiders
+        # Teamleiders: verlofaanvraag goedkeuren/afkeuren
         elif current_user.rol == 'teamleider':
             if action == 'approve':
                 try:
-                    record_id = int(request.form.get('record_id'))
-                    record = Aanwezigheid.query.get(record_id)
+                    verlof_id = int(request.form.get('verlof_id'))
+                    verlof_record = Verlof.query.get(verlof_id)
                     
-                    if record:
-                        record.goedkeuring_status = 'approved'
+                    if verlof_record:
+                        verlof_record.status = 'Goedgekeurd'
+                        verlof_record.goedgekeurd_door = current_user.werknemer_id
                         db.session.commit()
                 except Exception as e:
-                    print(f"Error approving record: {e}")
+                    print(f"Error approving leave: {e}")
                 return redirect(url_for('index'))
             
             elif action == 'reject':
                 try:
-                    record_id = int(request.form.get('record_id'))
-                    record = Aanwezigheid.query.get(record_id)
+                    verlof_id = int(request.form.get('verlof_id'))
+                    verlof_record = Verlof.query.get(verlof_id)
                     
-                    if record:
-                        record.goedkeuring_status = 'rejected'
+                    if verlof_record:
+                        verlof_record.status = 'Afgekeurd'
+                        verlof_record.goedgekeurd_door = current_user.werknemer_id
                         db.session.commit()
                 except Exception as e:
-                    print(f"Error rejecting record: {e}")
+                    print(f"Error rejecting leave: {e}")
                 return redirect(url_for('index'))
     
     # Data laden op basis van rol
     if current_user.rol == 'teamleider':
-        aanwezigheid_records = Aanwezigheid.query.filter_by(goedkeuring_status='pending').all()
+        verlof_records = Verlof.query.filter_by(status='In behandeling').all()
     else:
-        aanwezigheid_records = Aanwezigheid.query.filter_by(
+        verlof_records = Verlof.query.filter_by(
             werknemer_id=current_user.werknemer_id
         ).all()
-
-    return render_template( 
+    
+    return render_template(
         'index.html',
-        aanwezigheid=aanwezigheid_records,
+        verlof=verlof_records,
         user=current_user,
         rol=current_user.rol
     )

@@ -9,10 +9,6 @@ FLUSH PRIVILEGES;
 
 USE verlof;
 
-CREATE TABLE Afdelingen (
-    afdeling_id INT PRIMARY KEY AUTO_INCREMENT,
-    naam VARCHAR(100) NOT NULL
-);
 
 CREATE TABLE Werknemers (
     werknemer_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -34,16 +30,6 @@ CREATE TABLE Gebruikers (
     FOREIGN KEY (werknemer_id) REFERENCES Werknemers(werknemer_id)
 );
 
-CREATE TABLE Aanwezigheid (
-    aanwezigheid_id INT PRIMARY KEY AUTO_INCREMENT,
-    werknemer_id INT NOT NULL,
-    check_in DATETIME,
-    check_uit DATETIME,
-    status ENUM('Aanwezig', 'Afwezig', 'Remote', 'Ziek') DEFAULT 'Aanwezig',
-    notities TEXT,
-    goedkeuring_status VARCHAR(20) NOT NULL DEFAULT 'pending',
-    FOREIGN KEY (werknemer_id) REFERENCES Werknemers(werknemer_id)
-);
 
 CREATE TABLE Verlof (
     verlof_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -53,6 +39,6 @@ CREATE TABLE Verlof (
     eind_datum DATE NOT NULL,
     goedgekeurd_door INT,
     status ENUM('In behandeling', 'Goedgekeurd', 'Afgekeurd') DEFAULT 'In behandeling',
-    FOREIGN KEY (werknemer_id) REFERENCES Werknemers(werknemer_id),
-    FOREIGN KEY (goedgekeurd_door) REFERENCES Werknemers(werknemer_id)
+    FOREIGN KEY (werknemer_id) REFERENCES Gebruikers(werknemer_id),
+    FOREIGN KEY (goedgekeurd_door) REFERENCES Gebruikers(werknemer_id)
 );

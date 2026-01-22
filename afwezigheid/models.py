@@ -93,3 +93,56 @@ class Aanwezigheid(db.Model):
             status=self.status,
             notities=self.notities
         )
+
+
+class VerlofSchema(BaseModel):
+    """Pydantic schema for leave validation."""
+    verlof_id: int
+    werknemer_id: int
+    verlof_type: str
+    start_datum: datetime
+    eind_datum: datetime
+    status: str
+    goedgekeurd_door: Optional[int] = None
+    
+    @field_validator('verlof_type')
+    @classmethod
+    def verlof_type_valid(cls, v: str) -> str:
+        valid_types = ['Ziek', 'Betaald', 'Onbetaald', 'Vakantie']
+        assert v in valid_types, f'Verloftype moet een van deze zijn: {valid_types}'
+        return v
+    
+    @field_validator('status')
+    @classmethod
+    def status_valid(cls, v: str) -> str:
+        valid_statuses = ['In behandeling', 'Goedgekeurd', 'Afgekeurd']
+        assert v in valid_statuses, f'Status moet een van deze zijn: {valid_statuses}'
+        return v
+
+
+class Verlof(db.Model):
+    """Leave request model for database."""
+    __tablename__ = 'Verlof'
+    
+    verlof_id = db.Column(db.Integer, primary_key=True)
+    werknemer_id = db.Column(db.Integer, db.ForeignKey('Gebruikers.werknemer_id'), nullable=False)
+    verlof_type = db.Column(db.String(20), nullable=False)
+    start_datum = db.Column(db.Date, nullable=False)
+    eind_datum = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='In behandeling')
+    goedgekeurd_door = db.Column(db.Integer, db.ForeignKey('Gebruikers.werknemer_id'), nullable=True)
+    
+    def __repr__(self) -> str:
+        return f'<Verlof {self.werknemer_id} - {self.start_datum}>'
+    
+    def to_schema(self) -> VerlofSchema:
+        """Convert to Pydantic schema."""
+        return VerlofSchema(
+            verlof_id=self.verlof_id,
+            werknemer_id=self.werknemer_id,
+            verlof_type=self.verlof_type,
+            start_datum=self.start_datum,
+            eind_datum=self.eind_datum,
+            status=self.status,
+            goedgekeurd_door=self.goedgekeurd_door
+        )
